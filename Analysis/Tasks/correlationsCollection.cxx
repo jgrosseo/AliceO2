@@ -13,8 +13,10 @@
 //#include "Framework/ASoAHelpers.h"
 #include "Analysis/StepTHn.h"
 #include "Analysis/CorrelationContainer.h"
+
 #include <TH1F.h>
 #include <cmath>
+#include <TDirectory.h>
 
 namespace o2::aod
 {
@@ -47,9 +49,6 @@ struct ATask {
   }
 };
 
-// TODO add invariant mass cut
-// TODO add two track cut
-
 struct CorrelationTask {
 
   // Input definitions
@@ -63,9 +62,10 @@ struct CorrelationTask {
   // Output definitions
   OutputObj<CorrelationContainer> same{"sameEvent"};
   OutputObj<CorrelationContainer> mixed{"mixedEvent"};
+  OutputObj<TDirectory> qaOutput{"qa"};
 
   // Configuration
-  enum PairCuts { Photon, K0, Lambda, LambdaCC, Phi, Rho };
+  enum PairCuts { Photon = 1, K0, Lambda, LambdaCC, Phi, Rho };
   struct Config {
     std::map<PairCuts, float> mConvList;
     short mTriggerCharge = 0;    // 0 = all; 1 = positive; -1 = negative
@@ -77,8 +77,14 @@ struct CorrelationTask {
     THn* mEfficiencyAssociated = nullptr;
   } cfg;
   
+  struct QA {
+    TH3F* mTwoTrackDistancePt[2] = { nullptr };  // control histograms for two-track efficiency study: dphi*_min vs deta (0 = before cut, 1 = after cut)
+    TH2F* mControlConvResoncances = nullptr; // control histograms for cuts on conversions and resonances
+  } qa;
+  
   void init(o2::framework::InitContext&)
   {
+    // --- CONFIGURATION ---
     const char* binning =
       "vertex: -7, -5, -3, -1, 1, 3, 5, 7\n"
       "delta_phi: -1.570796, -1.483530, -1.396263, -1.308997, -1.221730, -1.134464, -1.047198, -0.959931, -0.872665, -0.785398, -0.698132, -0.610865, -0.523599, -0.436332, -0.349066, -0.261799, -0.174533, -0.087266, 0.0, 0.087266, 0.174533, 0.261799, 0.349066, 0.436332, 0.523599, 0.610865, 0.698132, 0.785398, 0.872665, 0.959931, 1.047198, 1.134464, 1.221730, 1.308997, 1.396263, 1.483530, 1.570796, 1.658063, 1.745329, 1.832596, 1.919862, 2.007129, 2.094395, 2.181662, 2.268928, 2.356194, 2.443461, 2.530727, 2.617994, 2.705260, 2.792527, 2.879793, 2.967060, 3.054326, 3.141593, 3.228859, 3.316126, 3.403392, 3.490659, 3.577925, 3.665191, 3.752458, 3.839724, 3.926991, 4.014257, 4.101524, 4.188790, 4.276057, 4.363323, 4.450590, 4.537856, 4.625123, 4.712389\n"
@@ -92,13 +98,27 @@ struct CorrelationTask {
       "p_t_eff: 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0\n"
       "vertex_eff: -10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10\n";
 
-    same.setObject(new CorrelationContainer("sameEvent", "sameEvent", "NumberDensityPhiCentrality", binning));
-    mixed.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", "NumberDensityPhiCentrality", binning));
-    
     cfg.mConvList[Photon] = 0.005;
     cfg.mConvList[K0] = 0.005;
     
     cfg.mTwoTrackCut = 0.08;
+
+    // --- OBJECT INIT ---  
+    same.setObject(new CorrelationContainer("sameEvent", "sameEvent", "NumberDensityPhiCentrality", binning));
+    mixed.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", "NumberDensityPhiCentrality", binning));
+    qaOutput.setObject(new TDirectory("qa", "qa"));
+    
+    if (cfg.mTwoTrackCut > 0) {
+      qa.mTwoTrackDistancePt[0] = new TH3F("TwoTrackDistancePt[0]", ";#Delta#eta;#Delta#varphi^{*}_{min};#Delta p_{T}", 100, -0.15, 0.15, 100, -0.05, 0.05, 20, 0, 10);
+      qa.mTwoTrackDistancePt[1] = (TH3F*) qa.mTwoTrackDistancePt[0]->Clone("TwoTrackDistancePt[1]");
+      //qaOutput->Add(qa.mTwoTrackDistancePt[0]);
+      //qaOutput->Add(qa.mTwoTrackDistancePt[1]);
+    }
+    
+    if (!cfg.mConvList.empty()) {
+      qa.mControlConvResoncances = new TH2F("ControlConvResoncances", ";id;delta mass", 6, -0.5, 5.5, 500, -0.5, 0.5);
+      //qaOutput->Add(qa.mControlConvResoncances);
+    }
   }
   
 //   using myTrack = myTracks::iterator;
@@ -112,12 +132,13 @@ struct CorrelationTask {
     LOGF(info, "Tracks for collision: %d", tracks.size());
     
     int bSign = 1; // TODO magnetic field from CCDB
+    const float pTCut = 2.0;
 
     for (auto it1 = tracks.begin(); it1 != tracks.end(); ++it1) {
       auto& track1 = *it1;
 //       LOGF(info, "TRACK %f %f | %f %f | %f %f", track1.eta(), track1.eta2(), track1.phi(), track1.phi2(), track1.pt(), track1.pt2());
       
-      if (track1.pt2() < 0.5)
+      if (track1.pt2() < pTCut)
         continue;
 
       if (cfg.mTriggerCharge != 0 && cfg.mTriggerCharge * track1.charge() < 0)
@@ -133,7 +154,7 @@ struct CorrelationTask {
 
       for (auto it2 = it1 + 1; it2 != tracks.end(); ++it2) {
         auto& track2 = *it2;
-        if (track2.pt2() < 0.5)
+        if (track2.pt2() < pTCut)
           continue;
           
         if (cfg.mAssociatedCharge != 0 && cfg.mAssociatedCharge * track2.charge() < 0)
@@ -141,10 +162,8 @@ struct CorrelationTask {
         if (cfg.mPairCharge != 0 && cfg.mPairCharge * track1.charge() * track2.charge() < 0)
           continue;
         
-        if (!cfg.mConvList.empty() && conversionCuts(track1, track2)) {
-//           LOGF(info, "Skipped combination %d %d", track1.index(), track2.index());
+        if (!cfg.mConvList.empty() && conversionCuts(track1, track2)) 
           continue;
-        }
         
         if (cfg.mTwoTrackCut > 0 && twoTrackCut(track1, track2, bSign))
           continue;
@@ -293,7 +312,7 @@ struct CorrelationTask {
       return false;
     
     massC = getInvMassSquared(track1, massD1, track2, massD2);
-    //fControlConvResoncances->Fill(1, massC - massM*massM);
+    qa.mControlConvResoncances->Fill(static_cast<int> (conv), massC - massM*massM);
     if (massC > (massM-cut)*(massM-cut) && massC < (massM+cut)*(massM+cut))
       return true;    
     
@@ -341,12 +360,12 @@ struct CorrelationTask {
   {
     // calculate inv mass squared approximately
     
-    auto eta1 = track1.eta2();
-    auto eta2 = track2.eta2();
-    auto phi1 = track1.phi2();
-    auto phi2 = track2.phi2();
-    auto pt1  = track1.pt2();
-    auto pt2  = track2.pt2();
+    const float eta1 = track1.eta2();
+    const float eta2 = track2.eta2();
+    const float phi1 = track1.phi2();
+    const float phi2 = track2.phi2();
+    const float pt1  = track1.pt2();
+    const float pt2  = track2.pt2();
     
     float tantheta1 = 1e10;
     
@@ -422,7 +441,7 @@ struct CorrelationTask {
           }
         }
         
-        //fTwoTrackDistancePt[0]->Fill(deta, dphistarmin, TMath::Abs(pt1 - pt2));
+        qa.mTwoTrackDistancePt[0]->Fill(deta, dphistarmin, TMath::Abs(track1.pt2() - track2.pt2()));
         
         if (dphistarminabs < cfg.mTwoTrackCut && TMath::Abs(deta) < cfg.mTwoTrackCut)
         {
@@ -430,7 +449,7 @@ struct CorrelationTask {
           return true;
         }
 
-        //fTwoTrackDistancePt[1]->Fill(deta, dphistarmin, TMath::Abs(pt1 - pt2));
+        qa.mTwoTrackDistancePt[1]->Fill(deta, dphistarmin, TMath::Abs(track1.pt2() - track2.pt2()));
       }
     }
     
