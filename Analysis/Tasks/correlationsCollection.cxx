@@ -56,13 +56,13 @@ struct CorrelationTask {
 
   // Filters
   //Filter trackFilter = (fabs(aod::etaphi::eta2) < 0.8) && (aod::etaphi::pt2 > 0.5);
-//   Filter trackFilter = (aod::etaphi::eta2 > -0.8) && (aod::etaphi::eta2 < 0.8) && (aod::etaphi::pt2 > 0.5);
-  Filter trackFilter = (aod::track::x > 1.0);
+  Filter trackFilter = (aod::etaphi::eta2 > -0.8) && (aod::etaphi::eta2 < 0.8) && (aod::etaphi::pt2 > 2);
+//   Filter trackFilter = (aod::track::x > 1.0);
 
   // Output definitions
   OutputObj<CorrelationContainer> same{"sameEvent"};
   OutputObj<CorrelationContainer> mixed{"mixedEvent"};
-  OutputObj<TDirectory> qaOutput{"qa"};
+  //OutputObj<TDirectory> qaOutput{"qa"};
 
   // Configuration
   enum PairCuts { Photon = 1, K0, Lambda, LambdaCC, Phi, Rho };
@@ -106,7 +106,7 @@ struct CorrelationTask {
     // --- OBJECT INIT ---  
     same.setObject(new CorrelationContainer("sameEvent", "sameEvent", "NumberDensityPhiCentrality", binning));
     mixed.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", "NumberDensityPhiCentrality", binning));
-    qaOutput.setObject(new TDirectory("qa", "qa"));
+    //qaOutput.setObject(new TDirectory("qa", "qa"));
     
     if (cfg.mTwoTrackCut > 0) {
       qa.mTwoTrackDistancePt[0] = new TH3F("TwoTrackDistancePt[0]", ";#Delta#eta;#Delta#varphi^{*}_{min};#Delta p_{T}", 100, -0.15, 0.15, 100, -0.05, 0.05, 20, 0, 10);
@@ -123,11 +123,12 @@ struct CorrelationTask {
   
 //   using myTrack = myTracks::iterator;
   
-//   void process(aod::Collision const& collision, soa::Join<aod::Tracks, soa::Filtered<aod::EtaPhi>> const& tracks)
 //   void process(aod::Collision const& collision, soa::Filtered<aod::EtaPhi> const& tracks)
+  void process(aod::Collision const& collision, soa::Filtered<soa::Join<aod::Tracks, aod::EtaPhi>> const& tracks)
   
   // Version with explicit nested loop
-  void process(aod::Collision const& collision, myTracks const& tracks)
+//   void process(aod::Collision const& collision, soa::Join<aod::Tracks, soa::Filtered<aod::EtaPhi>> const& tracks)
+//  void process(aod::Collision const& collision, myTracks const& tracks)
   {
     LOGF(info, "Tracks for collision: %d", tracks.size());
     
