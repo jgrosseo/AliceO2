@@ -56,8 +56,8 @@ struct CorrelationTask {
 
   // Filters
   //Filter trackFilter = (fabs(aod::etaphi::eta2) < 0.8) && (aod::etaphi::pt2 > 0.5);
-  Filter trackFilter = (aod::etaphi::eta2 > -0.8) && (aod::etaphi::eta2 < 0.8) && (aod::etaphi::pt2 > 2);
-//   Filter trackFilter = (aod::track::x > 1.0);
+  Filter trackFilter = (aod::etaphi::eta2 > -0.8F) && (aod::etaphi::eta2 < 0.8F) && (aod::etaphi::pt2 > 2.0F);
+  //Filter trackFilter = (aod::track::x > (float) 1.0);
 
   // Output definitions
   OutputObj<CorrelationContainer> same{"sameEvent"};
