@@ -469,7 +469,7 @@ struct AnalysisDataProcessorBuilder {
 
               // for each grouping element we need to slice the selection vector
               auto iterator_start = std::lower_bound(fullSelection.begin(), fullSelection.end(), offsets[oi]);
-              auto iterator_end = std::upper_bound(iterator_start + 1, fullSelection.end(), offsets[oi + 1]) - 1;
+              auto iterator_end = std::upper_bound(iterator_start + 1, fullSelection.end(), offsets[oi + 1]);
 
               soa::SelectionVector slicedSelection{iterator_start, iterator_end};
               std::transform(slicedSelection.begin(), slicedSelection.end(), slicedSelection.begin(), [&](int64_t index) { return index - static_cast<int64_t>(offsets[oi]); });
