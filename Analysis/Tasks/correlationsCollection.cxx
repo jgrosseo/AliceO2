@@ -56,7 +56,7 @@ struct CorrelationTask {
 
   // Filters
   //Filter trackFilter = (fabs(aod::etaphi::eta2) < 0.8) && (aod::etaphi::pt2 > 0.5);
-  Filter trackFilter = (aod::etaphi::eta2 > -0.8F) && (aod::etaphi::eta2 < 0.8F) && (aod::etaphi::pt2 > 2.0F);
+  Filter trackFilter = (aod::etaphi::eta2 > -0.8f) && (aod::etaphi::eta2 < 0.8f) && (aod::etaphi::pt2 >= 2.0f);
   //Filter trackFilter = (aod::track::x > (float) 1.0);
 
   // Output definitions
@@ -133,14 +133,15 @@ struct CorrelationTask {
     LOGF(info, "Tracks for collision: %d", tracks.size());
     
     int bSign = 1; // TODO magnetic field from CCDB
-    const float pTCut = 2.0;
+    const float pTCut = 0.0;
 
     for (auto it1 = tracks.begin(); it1 != tracks.end(); ++it1) {
       auto& track1 = *it1;
-//       LOGF(info, "TRACK %f %f | %f %f | %f %f", track1.eta(), track1.eta2(), track1.phi(), track1.phi2(), track1.pt(), track1.pt2());
       
       if (track1.pt2() < pTCut)
         continue;
+
+      LOGF(info, "TRACK %f %f | %f %f | %f %f", track1.eta(), track1.eta2(), track1.phi(), track1.phi2(), track1.pt(), track1.pt2());
 
       if (cfg.mTriggerCharge != 0 && cfg.mTriggerCharge * track1.charge() < 0)
         continue;
