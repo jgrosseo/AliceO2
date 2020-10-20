@@ -12,7 +12,7 @@
 /// \brief A tutorial task to retrieve objects from CCDB given a run number.
 ///        This example demonstrates how the CCDB can be used to store an efficiency object which is valid only for a specific time
 ///        interval (e.g. for a run)
-///        The objects are uploaded with 
+///        The objects are uploaded with
 ///        o2-ccdb-upload -p Users/jgrosseo/efficiency/simple -f eff.root -k efficiency --starttimestamp 1 --endtimestamp 16032093350000
 ///        Different timestamps intervals can be given.
 ///        You need to run this with the o2-analysis-timestamps example

@@ -10,7 +10,7 @@
 
 ///
 /// \brief This example demonstrates how the CCDB can be used to store an efficiency object which is valid for a full train run
-///        The objects are uploaded with 
+///        The objects are uploaded with
 ///        o2-ccdb-upload -p Users/jgrosseo/efficiency/simple -f eff.root -k efficiency --starttimestamp 1 --endtimestamp 16032093350000
 ///        A sufficiently large time stamp interval should be given to span all runs under consideration
 ///        NOTE If an efficiency object per run is needed, please check the example efficiencyPerRun.cxx
