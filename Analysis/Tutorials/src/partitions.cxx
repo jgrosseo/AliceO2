@@ -76,15 +76,15 @@ struct BTask {
 
 // MC example
 struct CTask {
-  void process(aod::McCollision const& collision, aod::McParticles const& particles, aod::McMotherDaughters& motherDaughters)
+  void process(aod::McCollision const& collision, aod::McParticles& particles, aod::McMotherDaughters& motherDaughters)
   {
     LOGF(INFO, "This collision has %d particles", particles.size());
 
     for (auto& particle : particles) {
       LOGF(INFO, "Particle %d (pdg %d) has: ", particle.globalIndex(), particle.pdgCode());
-      // uint32_t id = static_cast<uint32_t>(particle.globalIndex());
       Partition<aod::McMotherDaughters> daughters = aod::mcparticledaughter::motherId == particle.globalIndex();
       daughters.bindTable(motherDaughters);
+      daughters.bindExternalIndices(&particles);
       for (auto& daughter : daughters) {
         LOGF(INFO, "   - daughter %d (pdg %d)", daughter.globalIndex(), daughter.daughter().pdgCode());
       }
@@ -103,7 +103,41 @@ struct DTask {
       Partition<aod::McMotherDaughters> mothers = aod::mcparticledaughter::daughterId == particle.globalIndex();
       mothers.bindTable(motherDaughters);
       for (auto& mother : mothers) {
-        LOGF(INFO, "   - mother %d (pdg %d)", mother.globalIndex(), mother.daughter().pdgCode());
+        LOGF(INFO, "   - mother %d (pdg %d)", mother.globalIndex(), mother.mother().pdgCode());
+      }
+    }
+  }
+};
+
+struct ETask {
+  void process(aod::McCollision const& collision, aod::McParticles& particles, aod::McMotherDaughters& motherDaughters)
+  {
+    LOGF(INFO, "This collision has %d particles", particles.size());
+
+    for (auto& particle : particles) {
+      LOGF(INFO, "Particle %d (pdg %d) has: ", particle.globalIndex(), particle.pdgCode());
+      
+      auto daughters = motherDaughters.select(aod::mcparticledaughter::motherId == particle.globalIndex());
+      daughters.bindExternalIndices(&particles);
+      for (auto& daughter : daughters) {
+        LOGF(INFO, "   - daughter %d (pdg %d)", daughter.globalIndex(), daughter.daughter().pdgCode());
+      }
+    }
+  }
+};
+
+struct FTask {
+  void process(aod::Collision const& collision, soa::Join<aod::Tracks, aod::McTrackLabels> const& tracks, aod::McParticles& particles, aod::McMotherDaughters& motherDaughters)
+  {
+    LOGF(INFO, "This collision has %d tracks", tracks.size());
+
+    for (auto& track : tracks) {
+      auto particle = track.label(); // TODO cannot be by reference
+      LOGF(INFO, "Track %d points to the MC particle %d (pdg %d)", track.globalIndex(), particle.globalIndex(), particle.pdgCode());
+      auto mothers = motherDaughters.select(aod::mcparticledaughter::daughterId == particle.globalIndex());
+      mothers.bindExternalIndices(&particles);
+      for (auto& mother : mothers) {
+        LOGF(INFO, "   - mother %d (pdg %d)", mother.globalIndex(), mother.mother().pdgCode());
       }
     }
   }
@@ -115,6 +149,8 @@ WorkflowSpec defineDataProcessing(ConfigContext const&)
     // adaptAnalysisTask<ATask>("consume-tracks"),
     // adaptAnalysisTask<BTask>("partition-in-process")
     adaptAnalysisTask<CTask>("daughter-grouping"),
-    adaptAnalysisTask<DTask>("mother-grouping")
+    adaptAnalysisTask<DTask>("mother-grouping"),
+    adaptAnalysisTask<ETask>("daughter-grouping2"),
+    adaptAnalysisTask<FTask>("mother-grouping2"),
   };
 }
