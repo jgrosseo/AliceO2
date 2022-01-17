@@ -710,7 +710,7 @@ DECLARE_SOA_TABLE(V0s_001, "AOD", "V0_001", //! Run 3 V0 table (version 001)
                   o2::soa::Index<>, v0::CollisionId,
                   v0::PosTrackId, v0::NegTrackId);
 
-using V0s = V0s_001;
+using V0s = V0s_001;  //! this defines the current default version
 using V0 = V0s::iterator;
 
 namespace cascade
@@ -725,7 +725,7 @@ DECLARE_SOA_TABLE(Cascades_000, "AOD", "CASCADE", //! Run 2 cascade table
 DECLARE_SOA_TABLE(Cascades_001, "AOD", "CASCADE_001", //! Run 3 cascade table
                   o2::soa::Index<>, cascade::CollisionId, cascade::V0Id, cascade::BachelorId);
 
-using Cascades = Cascades_001;
+using Cascades = Cascades_001;  //! this defines the current default version
 using Cascade = Cascades::iterator;
 
 namespace origin
