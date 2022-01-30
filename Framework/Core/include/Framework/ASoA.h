@@ -1416,7 +1416,7 @@ constexpr bool is_binding_compatible_v()
 
 #define DECLARE_EQUIVALENT_FOR_INDEX(_Base_, _Equiv_) \
   template <>                                         \
-  struct EquivalentIndex<_Base_, _Equiv_> {  \
+  struct EquivalentIndex<_Base_, _Equiv_> {           \
     constexpr static bool value = true;               \
   }
 
