@@ -99,7 +99,7 @@ struct WritingCursor<soa::Table<PC...>> {
 template <typename T>
 struct Produces : WritingCursor<typename soa::PackToTable<typename T::table_t::persistent_columns_t>::table> {
   using table_t = T;
-  using metadata = typename aod::MetadataTrait<table_t>::metadata;
+  using metadata = typename aod::MetadataTrait<T>::metadata;
 
   // @return the associated OutputSpec
   OutputSpec const spec()
