@@ -367,7 +367,7 @@ DECLARE_SOA_EXTENDED_TABLE(TracksCov, StoredTracksCov, "TRACKCOV", //! Track cov
                            aod::track::C1PtZ,
                            aod::track::C1PtSnp,
                            aod::track::C1PtTgl,
-                           aod::track::C1Pt21Pt2);                           
+                           aod::track::C1Pt21Pt2);
 
 DECLARE_SOA_TABLE_FULL(StoredTracksExtra, "TracksExtra", "AOD", "TRACKEXTRA", //! On disk version of TracksExtra
                        track::TPCInnerParam, track::Flags, track::ITSClusterMap,
